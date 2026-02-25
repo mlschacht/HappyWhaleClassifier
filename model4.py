@@ -40,18 +40,6 @@ images = "/projects/bgmp/shared/Bi625/ML_Assignment/Datasets/Whale_species/speci
 wandb.__version__
 wandb.login()
 
-# We must turn our images into tensors, resize, and normalize them 
-# We can also add additional transformations to images 
-transform = transforms.Compose([transforms.ToTensor(), 
-                                #We will start with a model called Resnet18 that is optimized for 224x224 images
-                                #It is set to a very SMALL size initially so the model will train fast in class
-                                transforms.Resize([32,32]),
-                                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) # Normalize the data, these are the values that ResNet suggests based on their training data (natural scences)
-                               ])
-all_images = datasets.ImageFolder(images, transform)
-
-all_images = datasets.ImageFolder(images, transform )
-
 
 def show_random_dataset_image(dataset):
     idx = np.random.randint(0, len(dataset))    # take a random sample
@@ -66,12 +54,12 @@ def show_random_dataset_image(dataset):
 
 ## ADD YOUR TRANSFORMATION HERE
 transform = transforms.Compose([
-            transforms.Resize([224,224]), # Resize the image as our model is optimized for 224x224 pixels
+            transforms.Resize([32,32]), # Resize the image as our model is optimized for 224x224 pixels
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])]) # Normalize the data, these are the values that ResNet suggests based on their training data (natural scences))
 
-all_images = datasets.ImageFolder(images, transform )
-show_random_dataset_image(all_images)
+all_images = datasets.ImageFolder(images, transform)
+
 
 train_size = int(0.7 * len(all_images))
 val_size = int(0.15 * len(all_images))
@@ -96,110 +84,9 @@ def _get_weights(subset,full_dataset):
 train_weights = _get_weights(train_set,all_images)
 train_sampler = WeightedRandomSampler(train_weights, len(train_weights))
 
-train_loader = DataLoader(train_set, batch_size=48, drop_last=True, sampler=train_sampler)
-val_loader = DataLoader(val_set, batch_size=48, drop_last=True, shuffle=True)
-test_loader = DataLoader(test_set, batch_size=48, drop_last=True, shuffle=True)
-
-##Dont change these
-learning_rate=1e-3
-batchsize=48
-epochs=5
-
-## First, we create the basic block that will be used in our residual net
-class BasicBlock(nn.Module):
-    # Initializing method for the basic block (It's OOP!)
-    def __init__(self, in_channels, out_channels, stride=1):
-        super(BasicBlock, self).__init__()
-        ## Conv1: convolution layer, batch normalization, ReLU activation
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU(inplace=True)
-
-        ## Conv2: convolution layer, batch normalization
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(out_channels)
-
-        ## Shortcut connection: adds input to output
-        self.shortcut = nn.Sequential()
-        if stride != 1 or in_channels != out_channels:
-            self.shortcut = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(out_channels)
-            )
-
-    # The forward method calls on each layer
-    def forward(self, x):
-        ## Conv1: convolution layer, batch normalization, ReLU activation
-        out = self.conv1(x) 
-        out = self.bn1(out)
-        out = self.relu(out)
-        ## Conv2: convolution layer, batch normalization
-        out = self.conv2(out)
-        out = self.bn2(out)
-        ## Shortcut connection
-        out += self.shortcut(x)
-        ## Final activation
-        out = self.relu(out)
-        return out
-
-## Next, we put together these building blocks and create our residual net
-class ResNet18(nn.Module):
-    # specify the number of classes that we are predicting
-    def __init__(self, num_classes=6):
-        super(ResNet18, self).__init__()
-        # In channels = Num pixels in H + Num pixels in W
-        self.in_channels = 64
-        
-        # First convolution set (convolution, batch norm, relu)
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(64)
-        self.relu = nn.ReLU(inplace=True)
-
-        # Our building blocks
-        # The numbers correspond to the matrix shape
-        ### We increase the number of filters/channels (i.e., the first number) as we go
-        self.layer1 = self._make_layer(BasicBlock, 64, 2, stride=1)
-        self.layer2 = self._make_layer(BasicBlock, 128, 2, stride=2)
-        self.layer3 = self._make_layer(BasicBlock, 256, 2, stride=2)
-        self.layer4 = self._make_layer(BasicBlock, 512, 2, stride=2)
-
-        # Average pooling 
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-
-        # Final layer that makes the classification
-        self.fc = nn.Linear(512, num_classes)
-
-    def _make_layer(self, block, out_channels, num_blocks, stride):
-        strides = [stride] + [1]*(num_blocks-1)
-        layers = []
-        for stride in strides:
-            layers.append(block(self.in_channels, out_channels, stride))
-            self.in_channels = out_channels
-        return nn.Sequential(*layers)
-
-    def forward(self, x):
-        # First convolution set (convolution, batch norm, relu)
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-        # Our 4 building blocks
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = self.layer4(out)
-        
-        out = self.avgpool(out)
-        out = out.view(out.size(0), -1)
-        # Final layer that makes the classification
-        out = self.fc(out)
-        return out
-
-## Getting our model and transferring it to the GPU
-model = ResNet18().to(device)
-
 ### --------------------- Part 2 ----------------------
 
-batchsize = 1
+batchsize = 100
 learning_rate=1e-5
 epochs=1
 
@@ -319,8 +206,8 @@ def predict(model, dataset):
     return np.array(dataset_prediction), np.array(dataset_groundtruth)
             
     # create seaborn heatmap with required labels
-    ax=sns.heatmap(cm, annot=annot, fmt='', vmax=30, xticklabels=x_axis_labels, yticklabels=y_axis_labels)
-    ax.set_title(title)
+    # ax=sns.heatmap(cm, annot=annot, fmt='', vmax=30, xticklabels=x_axis_labels, yticklabels=y_axis_labels)
+    # ax.set_title(title)
 
 # Plot confusion matrix 
 # orginally from Runqi Yang; 
@@ -505,11 +392,13 @@ torch.save(model.state_dict(), './model4.pt')
 plt.plot(range(epochs), val_acc_list, color = "magenta")
 plt.xlabel("Epoch number")
 plt.ylabel("Valiation accuracy")
+plt.show()
 plt.savefig('./model4_accuracy.png')  
 
 plt.plot(range(epochs), val_losses, color = "purple")
 plt.xlabel("Epoch number")
 plt.ylabel("Valiation loss")
+plt.show()
 plt.savefig('./model4_validation_loss.png')  
 
 y_pred, y_true = predict(model, test_set)
