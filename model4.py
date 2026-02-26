@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-## Importing packages - Please DO NOT alter this box ##
+## Importing packages 
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
@@ -40,18 +40,6 @@ images = "/projects/bgmp/shared/Bi625/ML_Assignment/Datasets/Whale_species/speci
 wandb.__version__
 wandb.login()
 
-
-def show_random_dataset_image(dataset):
-    idx = np.random.randint(0, len(dataset))    # take a random sample
-    img, mask = dataset[idx]                    # get the image and the nuclei masks
-    f, axarr = plt.subplots(1, 2)               # make two plots on one figure
-    axarr[0].imshow(img[0], cmap="viridis")                     # show the image, cmap is the color map that the image is being shown in
-    #axarr[1].imshow(mask[0])                    # show the masks
-    _ = [ax.axis('off') for ax in axarr]        # remove the axes
-    print('Image size is %s' % {img[0].shape})
-    print(img.shape)
-    plt.show()
-
 ## ADD YOUR TRANSFORMATION HERE
 transform = transforms.Compose([
             transforms.Resize([32,32]), # Resize the image as our model is optimized for 224x224 pixels
@@ -88,7 +76,7 @@ train_sampler = WeightedRandomSampler(train_weights, len(train_weights))
 
 batchsize = 100
 learning_rate=1e-5
-epochs=1
+epochs=2
 
 train_loader = DataLoader(train_set, batch_size=batchsize, drop_last=True, sampler=train_sampler)
 val_loader = DataLoader(val_set, batch_size=batchsize, drop_last=True, shuffle=True)
@@ -213,8 +201,9 @@ def predict(model, dataset):
 # orginally from Runqi Yang; 
 # see https://gist.github.com/hitvoice/36cf44689065ca9b927431546381a3f7
 
-labels = ['Beluga','Common dolphin', 'False killer whale', 'Fin whale', 'Gray whale','Humpback whale']
-def cm_analysis(y_true, y_pred, filename, labels, ymap=None, figsize=(10,10)):
+labels = ['Beluga','Common dolphin', 'False killer whale', 'Fin whale', 'Gray whale','Humpback whale'] #probably technically don't need this here anymore
+
+def cm_analysis(y_true, y_pred, title, figsize=(10,10)):
     """
     Generate matrix plot of confusion matrix with pretty annotations.
     The plot image is saved to disk.
@@ -230,11 +219,8 @@ def cm_analysis(y_true, y_pred, filename, labels, ymap=None, figsize=(10,10)):
                  Caution: original y_true, y_pred and labels must align.
       figsize:   the size of the figure plotted.
     """
-    if ymap is not None:
-        y_pred = [ymap[yi] for yi in y_pred]
-        y_true = [ymap[yi] for yi in y_true]
-        labels = [ymap[yi] for yi in labels]
-    cm = confusion_matrix(y_true, y_pred, labels=labels)
+    labels = ['Beluga','Common dolphin', 'False killer whale', 'Fin whale', 'Gray whale','Humpback whale']
+    cm = confusion_matrix(y_true, y_pred)
     cm_sum = np.sum(cm, axis=1, keepdims=True)
     cm_perc = cm / cm_sum.astype(float) * 100
     annot = np.empty_like(cm).astype(str)
@@ -254,51 +240,12 @@ def cm_analysis(y_true, y_pred, filename, labels, ymap=None, figsize=(10,10)):
     cm.index.name = 'Actual'
     cm.columns.name = 'Predicted'
     fig, ax = plt.subplots(figsize=figsize)
-    sns.heatmap(cm, annot=annot, fmt='', ax=ax)
-    plt.savefig(filename)
-
-# def cm_analysis(y_true, y_pred, title, figsize=(10,10)):
-#     """
-#     Generate matrix plot of confusion matrix with pretty annotations.
-#     The plot image is saved to disk.
-#     args: 
-#       y_true:    true label of the data, with shape (nsamples,)
-#       y_pred:    prediction of the data, with shape (nsamples,)
-#       filename:  filename of figure file to save
-#       labels:    string array, name the order of class labels in the confusion matrix.
-#                  use `clf.classes_` if using scikit-learn models.
-#                  with shape (nclass,).
-#       ymap:      dict: any -> string, length == nclass.
-#                  if not None, map the labels & ys to more understandable strings.
-#                  Caution: original y_true, y_pred and labels must align.
-#       figsize:   the size of the figure plotted.
-#     """
-#     labels = ['Beluga','Common dolphin', 'False killer whale', 'Fin whale', 'Gray whale','Humpback whale']
-#     cm = confusion_matrix(y_true, y_pred)
-#     cm_sum = np.sum(cm, axis=1, keepdims=True)
-#     cm_perc = cm / cm_sum.astype(float) * 100
-#     annot = np.empty_like(cm).astype(str)
-#     nrows, ncols = cm.shape
-#     for i in range(nrows):
-#         for j in range(ncols):
-#             c = cm[i, j]
-#             p = cm_perc[i, j]
-#             if i == j:
-#                 s = cm_sum[i]
-#                 annot[i, j] = '%.1f%%\n%d/%d' % (p, c, s)
-#             elif c == 0:
-#                 annot[i, j] = ''
-#             else:
-#                 annot[i, j] = '%.1f%%\n%d' % (p, c)
-#     cm = pd.DataFrame(cm, index=labels, columns=labels)
-#     cm.index.name = 'Actual'
-#     cm.columns.name = 'Predicted'
-#     fig, ax = plt.subplots(figsize=figsize)
                               
-#     x_axis_labels = ['Beluga','Common dolphin', 'False killer whale', 'Fin whale', 'Gray whale','Humpback whale'] # labels for x-axis
-#     y_axis_labels = ['Beluga','Common dolphin', 'False killer whale', 'Fin whale', 'Gray whale','Humpback whale'] # labels for y-axis
-#     ax=sns.heatmap(cm, annot=annot, fmt='', vmax=30, xticklabels=x_axis_labels, yticklabels=y_axis_labels, cmap = "viridis")
-#     ax.set_title(title)
+    x_axis_labels = ['Beluga','Common dolphin', 'False killer whale', 'Fin whale', 'Gray whale','Humpback whale'] # labels for x-axis
+    y_axis_labels = ['Beluga','Common dolphin', 'False killer whale', 'Fin whale', 'Gray whale','Humpback whale'] # labels for y-axis
+    ax=sns.heatmap(cm, annot=annot, fmt='', vmax=30, xticklabels=x_axis_labels, yticklabels=y_axis_labels, cmap = "viridis")
+    ax.set_title(title)
+    plt.savefig("ConfusionMatrix4")
 
 wandb.init(
     project="BGMP_HappyWhale",
@@ -388,19 +335,24 @@ for epoch in range(num_epochs):
 wandb.finish()
 
 torch.save(model.state_dict(), './model4.pt')
-
+plt.figure()
 plt.plot(range(epochs), val_acc_list, color = "magenta")
 plt.xlabel("Epoch number")
 plt.ylabel("Valiation accuracy")
-plt.show()
-plt.savefig('./model4_accuracy.png')  
+plt.savefig('./model4_accuracy.png')
+plt.close()# this shouls also help the figure close and avoid saving over this figure  
 
+plt.figure()#avoids saving over previous figure maybe??
 plt.plot(range(epochs), val_losses, color = "purple")
 plt.xlabel("Epoch number")
 plt.ylabel("Valiation loss")
-plt.show()
-plt.savefig('./model4_validation_loss.png')  
+plt.savefig('./model4_validation_loss.png') 
+plt.close() 
 
 y_pred, y_true = predict(model, test_set)
-cm_analysis(y_true, y_pred, "Confusionmatrix_model4.png", labels = labels )
+#cm_analysis(y_true, y_pred, "Confusionmatrix_model4.png", labels)
+filename = "confusionMatrix.png"
+cm_analysis(y_true, y_pred, "confusionMatrix", figsize=(10,10))
 
+#try to get the model to not double print the graphs
+#then rerun all 3 models
