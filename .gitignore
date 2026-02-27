@@ -1,1 +1,11 @@
 KEY_ML_assignment_whale_species.ipynb
+*.pt
+*/errorfiles
+/errorfiles
+*/outfiles
+/outfiles
+*/runs
+/runs
+/wandb
+*/wandb
+.ipynb_checkpoints/
