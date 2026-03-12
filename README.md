@@ -24,3 +24,6 @@ Here is a comparison table of all 4 of my runs:
 |Model 4_1 |244x244 | 100 | 1e-5 | 2 | 0.9634| 41.5% | 1.5921 |28m 14s|
 
 *completed as part 1 in this assignment
+
+
+team Model 4 was completed as we attempted to optimize the model. I tried the most extreme version of our optimization. This ultimately made the performance of the model much worse. Detailed changes are noted in the MLPart3_notes.md file.
