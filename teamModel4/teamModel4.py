@@ -83,104 +83,17 @@ val_loader = DataLoader(val_set, batch_size=batchsize, drop_last=True, shuffle=T
 test_loader = DataLoader(test_set, batch_size=batchsize, drop_last=True, shuffle=True)
 
 ## Team Model 4
-#########
-## First, we create the basic block that will be used in our residual net
-class BasicBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, stride=1):
-        super(BasicBlock, self).__init__()
-        ## Conv1: convolution layer, batch normalization, ReLU activation
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU(inplace=True)
-
-        ## Conv2: convolution layer, batch normalization
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(out_channels)
-
-        ## Shortcut connection: adds input to output
-        self.shortcut = nn.Sequential()
-        if stride != 1 or in_channels != out_channels:
-            self.shortcut = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(out_channels)
-            )
-
-    # The forward method calls on each layer
-    def forward(self, x):
-        ## Conv1: convolution layer, batch normalization, ReLU activation
-        out = self.conv1(x) 
-        out = self.bn1(out)
-        out = self.relu(out)
-        ## Conv2: convolution layer, batch normalization
-        out = self.conv2(out)
-        out = self.bn2(out)
-        ## Shortcut connection
-        out += self.shortcut(x)
-        ## Final activation
-        out = self.relu(out)
-        return out
-
-############
-## Next, we put together these building blocks and create our residual net
-class ResNet18(nn.Module):
-    # specify the number of classes that we are predicting
-    def __init__(self, num_classes=6):
-        super(ResNet18, self).__init__()
-        # In channels = Num pixels in H + Num pixels in W
-        self.in_channels = 64
-        
-        # First convolution set (convolution, batch norm, relu)
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(64)
-        self.relu = nn.ReLU(inplace=True)
-
-        # Our building blocks
-        # The numbers correspond to the matrix shape
-        ### We increase the number of filters/channels (i.e., the first number) as we go
-        self.layer1 = self._make_layer(BasicBlock, 64, 2, stride=1)
-        self.layer2 = self._make_layer(BasicBlock, 128, 2, stride=2)
-        self.layer3 = self._make_layer(BasicBlock, 256, 2, stride=2)
-        self.layer4 = self._make_layer(BasicBlock, 512, 2, stride=2)
-
-        # Average pooling 
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-
-        # Final layer that makes the classification
-        self.fc = nn.Linear(512, num_classes)
-
-    def _make_layer(self, block, out_channels, num_blocks, stride):
-        strides = [stride] + [1]*(num_blocks-1)
-        layers = []
-        for stride in strides:
-            layers.append(block(self.in_channels, out_channels, stride))
-            self.in_channels = out_channels
-        return nn.Sequential(*layers)
-
-    def forward(self, x):
-        # First convolution set (convolution, batch norm, relu)
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-        # Our 4 building blocks
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = self.layer4(out)
-        
-        out = self.avgpool(out)
-        out = out.view(out.size(0), -1)
-        # Final layer that makes the classification
-        out = self.fc(out)
-        return out
-
 ## Getting our model and transferring it to the GPU
 import torchvision.models as models
 
 model = models.resnet18(weights="IMAGENET1K_V1")
+model.fc = nn.Linear(model.fc.in_features, 6)
+model = model.to(device)
 
 #define loss function & optimizer
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
 # predict the test dataset
 def predict(model, dataset):
     dataset_prediction = []

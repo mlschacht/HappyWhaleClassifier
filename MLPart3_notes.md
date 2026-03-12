@@ -75,3 +75,5 @@ All models were run with: pretrained weights, batchsize = 48-50, and resolution 
 | Makayla | 1e-15 | 16 | 8.69087 | **0%** | 8.34692 | 54m 24s | 
 
 ## Summary About our Attempts and Recommendations Moving Forward (1-3 paragraphs)
+
+The goal was to keep batchsize, resolution, and use the pretrained weights for all of our models. However, it was a bit confusing to determine if we all were really setting up the same "pretrained weights". For example, after mine and Amanda's first attempts, our metrics were vastly different in success. Her model had a validation accuracy of 98% while mine had a validation accuracy of 0%. Daniella said her metrics showed poor model performance like my metrics as well. 
